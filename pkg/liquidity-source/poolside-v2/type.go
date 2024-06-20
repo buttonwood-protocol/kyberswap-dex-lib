@@ -48,3 +48,9 @@ type ReserveData struct {
 	Pool0 *big.Int
 	Pool1 *big.Int
 }
+
+type PoolMeta struct {
+	PlBps       uint16 `json:"plBps"`
+	FeeBps      uint16 `json:"feeBps"`
+	BlockNumber uint64 `json:"blockNumber"`
+}
