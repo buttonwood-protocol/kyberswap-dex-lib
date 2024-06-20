@@ -216,7 +216,7 @@ func (u *PoolsListUpdater) getRebaseTokenInfo(ctx context.Context, tokenAddress 
 	getUnderlyingTokenRequest := u.ethrpcClient.NewRequest().SetContext(ctx)
 
 	getUnderlyingTokenRequest.AddCall(&ethrpc.Call{
-		ABI:    poolsideV1ButtonTokenABI,
+		ABI:    buttonTokenABI,
 		Target: tokenAddress,
 		Method: buttonTokenMethodGetUnderlyingToken,
 		Params: nil,
@@ -246,7 +246,6 @@ func (u *PoolsListUpdater) initPools(ctx context.Context, pairAddresses []common
 		return nil, err
 	}
 
-	rebaseTokenInfoMap := make(map[string]RebaseTokenInfo)
 	pools := make([]entity.Pool, 0, len(pairAddresses))
 
 	for i, pairData := range pairDatas {
@@ -263,12 +262,14 @@ func (u *PoolsListUpdater) initPools(ctx context.Context, pairAddresses []common
 			Swappable: true,
 		}
 
+		rebaseTokenInfoMap := make(map[string]RebaseTokenInfo)
+
 		rebaseTokenInfoMap[token0Address] = u.getRebaseTokenInfo(ctx, token0Address)
 		rebaseTokenInfoMap[token1Address] = u.getRebaseTokenInfo(ctx, token1Address)
 
 		extra, err := json.Marshal(Extra{
-			Fee:                u.config.Fee,
-			FeePrecision:       u.config.FeePrecision,
+			PlBps:              pairData.PlBps,
+			FeeBps:             pairData.FeeBps,
 			RebaseTokenInfoMap: rebaseTokenInfoMap,
 		})
 

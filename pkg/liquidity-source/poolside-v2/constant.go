@@ -10,11 +10,14 @@ var (
 )
 
 const (
-	factoryMethodGetPair        = "allPairs"
-	factoryMethodAllPairsLength = "allPairsLength"
-	pairMethodToken0            = "token0"
-	pairMethodToken1            = "token1"
-	pairMethodFeeBps            = "feeBps"
-	pairMethodPlBps             = "plBps"
-	erc20TokenDecimals          = "decimals"
+	factoryMethodGetPair                 = "allPairs"
+	factoryMethodAllPairsLength          = "allPairsLength"
+	pairMethodToken0                     = "token0"
+	pairMethodToken1                     = "token1"
+	pairMethodFeeBps                     = "feeBps"
+	pairMethodPlBps                      = "plBps"
+	erc20TokenDecimals                   = "decimals"
+	buttonTokenMethodGetUnderlyingToken  = "underlying"
+	buttonTokenMethodUnderlyingToWrapper = "underlyingToWrapper"
+	buttonTokenMethodWrapperToUnderlying = "wrapperToUnderlying"
 )

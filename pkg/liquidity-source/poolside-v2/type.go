@@ -27,3 +27,9 @@ type PairData struct {
 	PlBps  uint16         `json:"plBps"`
 	FeeBps uint16         `json:"feeBps"`
 }
+
+type Extra struct {
+	PlBps              uint16                     `json:"plBps"`
+	FeeBps             uint16                     `json:"feeBps"`
+	RebaseTokenInfoMap map[string]RebaseTokenInfo `json:"rebaseTokenInfoMap"`
+}
