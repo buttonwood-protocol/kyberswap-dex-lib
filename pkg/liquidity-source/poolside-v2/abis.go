@@ -9,6 +9,8 @@ import (
 var (
 	poolsideV2PairABI    abi.ABI
 	poolsideV2FactoryABI abi.ABI
+	buttonTokenABI       abi.ABI
+	erc20ABI             abi.ABI
 )
 
 func init() {
@@ -21,6 +23,12 @@ func init() {
 		},
 		{
 			&poolsideV2FactoryABI, factoryV2ABIJson,
+		},
+		{
+			&buttonTokenABI, buttonTokenABIJson,
+		},
+		{
+			&erc20ABI, erc20ABIJson,
 		},
 	}
 

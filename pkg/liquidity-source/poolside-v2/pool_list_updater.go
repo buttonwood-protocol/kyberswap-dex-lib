@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"math/big"
+	"strings"
 	"time"
 
 	"github.com/KyberNetwork/ethrpc"
@@ -140,4 +141,153 @@ func (u *PoolsListUpdater) listPairAddresses(ctx context.Context, offset int, ba
 	}
 
 	return pairAddresses, nil
+}
+
+func (u *PoolsListUpdater) listPairDatas(ctx context.Context, pairAddresses []common.Address) ([]PairData, error) {
+	pairDatasResult := make([]PairData, len(pairAddresses))
+
+	listPairDatasRequest := u.ethrpcClient.NewRequest().SetContext(ctx)
+
+	for i, pairAddress := range pairAddresses {
+		listPairDatasRequest.AddCall(&ethrpc.Call{
+			ABI:    poolsideV2PairABI,
+			Target: pairAddress.Hex(),
+			Method: pairMethodToken0,
+			Params: nil,
+		}, []interface{}{&pairDatasResult[i].Token0})
+
+		listPairDatasRequest.AddCall(&ethrpc.Call{
+			ABI:    poolsideV2PairABI,
+			Target: pairAddress.Hex(),
+			Method: pairMethodToken1,
+			Params: nil,
+		}, []interface{}{&pairDatasResult[i].Token1})
+
+		listPairDatasRequest.AddCall(&ethrpc.Call{
+			ABI:    poolsideV2PairABI,
+			Target: pairAddress.Hex(),
+			Method: pairMethodPlBps,
+			Params: nil,
+		}, []interface{}{&pairDatasResult[i].PlBps})
+
+		listPairDatasRequest.AddCall(&ethrpc.Call{
+			ABI:    poolsideV2PairABI,
+			Target: pairAddress.Hex(),
+			Method: pairMethodFeeBps,
+			Params: nil,
+		}, []interface{}{&pairDatasResult[i].FeeBps})
+	}
+
+	if _, err := listPairDatasRequest.Aggregate(); err != nil {
+		return nil, err
+	}
+
+	return pairDatasResult, nil
+}
+
+func (u *PoolsListUpdater) getDecimals(ctx context.Context, tokenAddress string) (uint8, error) {
+	var decimals uint8
+
+	getDecimalsRequest := u.ethrpcClient.NewRequest().SetContext(ctx)
+
+	getDecimalsRequest.AddCall(&ethrpc.Call{
+		ABI:    erc20ABI,
+		Target: tokenAddress,
+		Method: erc20TokenDecimals,
+		Params: nil,
+	}, []interface{}{&decimals})
+
+	if _, err := getDecimalsRequest.Call(); err != nil {
+		return 0, err
+	}
+
+	return decimals, nil
+}
+
+func (u *PoolsListUpdater) getRebaseTokenInfo(ctx context.Context, tokenAddress string) RebaseTokenInfo {
+	var underlyingToken common.Address
+
+	decimals, err := u.getDecimals(ctx, tokenAddress)
+
+	if err != nil {
+		decimals = defaultDecimals
+	}
+
+	getUnderlyingTokenRequest := u.ethrpcClient.NewRequest().SetContext(ctx)
+
+	getUnderlyingTokenRequest.AddCall(&ethrpc.Call{
+		ABI:    poolsideV1ButtonTokenABI,
+		Target: tokenAddress,
+		Method: buttonTokenMethodGetUnderlyingToken,
+		Params: nil,
+	}, []interface{}{&underlyingToken})
+
+	if _, err := getUnderlyingTokenRequest.Call(); err != nil {
+		return RebaseTokenInfo{
+			UnderlyingToken: "",
+			WrapRatio:       nil,
+			UnwrapRatio:     nil,
+			Decimals:        decimals,
+		}
+	}
+
+	return RebaseTokenInfo{
+		UnderlyingToken: underlyingToken.Hex(),
+		WrapRatio:       nil,
+		UnwrapRatio:     nil,
+		Decimals:        decimals,
+	}
+}
+
+func (u *PoolsListUpdater) initPools(ctx context.Context, pairAddresses []common.Address) ([]entity.Pool, error) {
+	pairDatas, err := u.listPairDatas(ctx, pairAddresses)
+
+	if err != nil {
+		return nil, err
+	}
+
+	rebaseTokenInfoMap := make(map[string]RebaseTokenInfo)
+	pools := make([]entity.Pool, 0, len(pairAddresses))
+
+	for i, pairData := range pairDatas {
+		token0Address := strings.ToLower(pairData.Token0.Hex())
+		token1Address := strings.ToLower(pairData.Token1.Hex())
+
+		token0 := &entity.PoolToken{
+			Address:   token0Address,
+			Swappable: true,
+		}
+
+		token1 := &entity.PoolToken{
+			Address:   token1Address,
+			Swappable: true,
+		}
+
+		rebaseTokenInfoMap[token0Address] = u.getRebaseTokenInfo(ctx, token0Address)
+		rebaseTokenInfoMap[token1Address] = u.getRebaseTokenInfo(ctx, token1Address)
+
+		extra, err := json.Marshal(Extra{
+			Fee:                u.config.Fee,
+			FeePrecision:       u.config.FeePrecision,
+			RebaseTokenInfoMap: rebaseTokenInfoMap,
+		})
+
+		if err != nil {
+			return nil, err
+		}
+
+		var newPool = entity.Pool{
+			Address:   strings.ToLower(pairAddresses[i].Hex()),
+			Exchange:  u.config.DexID,
+			Type:      DexType,
+			Timestamp: time.Now().Unix(),
+			Reserves:  []string{"0", "0"},
+			Tokens:    []*entity.PoolToken{token0, token1},
+			Extra:     string(extra),
+		}
+
+		pools = append(pools, newPool)
+	}
+
+	return pools, nil
 }

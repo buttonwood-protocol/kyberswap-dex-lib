@@ -2,6 +2,10 @@ package pufeth
 
 import "github.com/holiman/uint256"
 
+type Gas struct {
+	Swap int64
+}
+
 type PoolExtra struct {
 	TotalSupply      *uint256.Int `json:"totalSupply"`
 	TotalAssets      *uint256.Int `json:"totalAssets"`
