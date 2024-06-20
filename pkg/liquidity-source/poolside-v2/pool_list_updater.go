@@ -74,9 +74,38 @@ func (u *PoolsListUpdater) GetNewPools(ctx context.Context, metadataBytes []byte
 		return nil, metadataBytes, err
 	}
 
+	pools, err := u.initPools(ctx, pairAddresses)
+	if err != nil {
+		logger.
+			WithFields(logger.Fields{"dex_id": dexID, "err": err}).
+			Error("initPools failed")
+
+		return nil, metadataBytes, err
+	}
+
 	newMetadataBytes, err := json.Marshal(PoolsListUpdaterMetadata{
 		Offset: offset + len(pairAddresses),
 	})
+	if err != nil {
+		logger.
+			WithFields(logger.Fields{"dex_id": dexID, "err": err}).
+			Error("newMetadataBytes failed")
+
+		return nil, metadataBytes, err
+	}
+
+	logger.
+		WithFields(
+			logger.Fields{
+				"dex_id":      dexID,
+				"pools_len":   len(pools),
+				"offset":      offset,
+				"duration_ms": time.Since(startTime).Milliseconds(),
+			},
+		).
+		Info("Finished getting new pools")
+
+	return pools, newMetadataBytes, nil
 }
 
 func (u *PoolsListUpdater) getAllPairsLength(ctx context.Context) (int, error) {
