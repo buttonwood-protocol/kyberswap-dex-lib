@@ -33,3 +33,18 @@ type Extra struct {
 	FeeBps             uint16                     `json:"feeBps"`
 	RebaseTokenInfoMap map[string]RebaseTokenInfo `json:"rebaseTokenInfoMap"`
 }
+
+type GetReservesResult struct {
+	Pool0              *big.Int
+	Pool1              *big.Int
+	Reservoir0         *big.Int
+	Reservoir1         *big.Int
+	Basin0             *big.Int
+	Basin1             *big.Int
+	BlockTimestampLast uint32
+}
+
+type ReserveData struct {
+	Pool0 *big.Int
+	Pool1 *big.Int
+}

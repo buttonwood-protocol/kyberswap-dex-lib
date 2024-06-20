@@ -14,6 +14,7 @@ const (
 	factoryMethodAllPairsLength          = "allPairsLength"
 	pairMethodToken0                     = "token0"
 	pairMethodToken1                     = "token1"
+	pairMethodGetLiquidityBalances       = "getLiquidityBalances"
 	pairMethodFeeBps                     = "feeBps"
 	pairMethodPlBps                      = "plBps"
 	erc20TokenDecimals                   = "decimals"
